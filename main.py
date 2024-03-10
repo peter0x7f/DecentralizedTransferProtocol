@@ -105,7 +105,7 @@ def connect_to_secure_server(host, port, server_cert):
                 print(f"Failed to communicate with the server: {e}")
                 log_communication(host, "Failed")
 
-# Server-side functionality
+# Remove conflict with other file.
 def start_secure_server(host, port, certificate, key):
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain(certfile=certificate, keyfile=key)
