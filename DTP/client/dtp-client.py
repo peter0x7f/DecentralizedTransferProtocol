@@ -7,83 +7,134 @@ import time
 import sys
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
-import secrets
+import secrets 
 
-def generate_random_string(length):
-    """Generates a cryptographically strong random string of the specified length."""
-    # Each byte has 2 hex digits, so we need length * 2 hex digits
-    return secrets.token_hex(length)
+def get_or_create_secret(file_path, length):
+    """Get the secret from file or create it if it does not exist."""
+    try:
+        # Check if the file already exists
+        if os.path.exists(file_path):
+            # Read the secret from file
+            with open(file_path, 'rb') as file:
+                secret = file.read()
+            if len(secret) == length:
+                return secret
+            else:
+                print("Secret in file does not match the expected length.")
+        # If file does not exist or secret is incorrect, generate a new one
+        secret = secrets.token_bytes(length)
+        with open(file_path, 'wb') as file:
+            file.write(secret)
+        return secret
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
 
-def get_random_string_key():
-    """Returns a random string of length 16, 24, or 32 bytes."""
-    length = secrets.choice([16, 24, 32])  # Randomly choose between 16, 24, or 32 bytes
-    return generate_random_string(length)
+# File paths for the key and IV
+key_path = 'encryption_key.bin'
+iv_path = 'encryption_iv.bin'
 
-def get_random_string_IV():
-    """Returns a random string of length 16, 24, or 32 bytes."""
-    length = secrets.choice([16])  # Randomly choose between 16, 24, or 32 bytes
-    return generate_random_string(length)
+# Generate or retrieve the key and IV
+KEY = get_or_create_secret(key_path, 16)  # AES key should be 16 bytes (128-bit), 24 bytes (192-bit), or 32 bytes (256-bit)
+IV = get_or_create_secret(iv_path, 16)    # IV should typically be 16 bytes for AES
 
-random_string = get_random_string_key()
-random_string_IV = get_random_string_IV()
-KEY = f"{random_string}" # Ensure this is 16, 24, or 32 bytes long
-IV = f'{random_string_IV}'  # IV must be 16 bytes long
+def encrypt_addr(data):
+    """Encrypt data using AES (CBC mode) with PKCS7 padding."""
+    if isinstance(data, str):
+        data = data.encode()  # Converts string to bytes if necessary
 
-def encrypt_data(data):
     cipher = AES.new(KEY, AES.MODE_CBC, IV)
-    encrypted_data = cipher.encrypt(pad(data.encode(), AES.block_size))
+    padded_data = pad(data, AES.block_size, style='pkcs7')
+    encrypted_data = cipher.encrypt(padded_data)
     return encrypted_data
 
-def decrypt_data(encrypted_data):
-    cipher = AES.new(KEY, AES.MODE_CBC, IV)
-    decrypted_data = unpad(cipher.decrypt(encrypted_data), AES.block_size)
-    return decrypted_data.decode()
+def encrypt_data(data):
+    # Dummy encryption for demonstration
+    return data  # Replace with actual encryption in production
+
+def save_to_whitelist(addr_key):
+    addr_key_str = str(f"{addr_key[0]}")
+    print(f"Saving to whitelist: {addr_key_str}")  # Debug print
+    with open('data/whitelisted_ips.txt', 'a') as f:
+        f.write(addr_key_str + '\n')
+
+def is_whitelisted(addr_key):
+    """Check if the given address key is in the whitelist by reading a text file."""
+    addr_key_str = str(f"{addr_key[0]}") # Convert addr_key to string if it's not already
+    print(f"Checking if whitelisted: {addr_key_str}")  # Debug print as string
+    try:
+        with open('data/whitelisted_ips.txt', 'r') as f:  # Open file in read mode, text mode
+            for line in f:
+                print(line.strip())
+                if addr_key_str == line.strip():  # Compare against stripped line
+                    print("Found whitelisted IP")
+                    return True
+        print("IP not found in whitelist")
+        return False
+    except FileNotFoundError:
+        print("Whitelist file not found.")
+        return False
+
+    
+
 def handle_connections(port):
     """Handles incoming connections and processes data."""
     user_approved = {}  # Dictionary to keep track of user approvals
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(('localhost', port))
         s.listen()
         print(f"Listening on localhost:{port}")
 
         while True:
             conn, addr = s.accept()
-            addr_key = encrypt_data(f"{addr[0]}:{addr[1]}")  # Create a aes enc key based on client address
+            # Convert addr tuple to a string that represents the client address
+            addr_key = encrypt_data(addr)  # Now passing a string
+            print(f"Connected by {addr}, Processed address key: {addr_key}")
 
-            with conn:
-                print(f"Connected by {addr}")
+            try:
                 data = conn.recv(1024).decode()
                 print(f"Data received: {data}")
 
-                if data == 'store_data_request':
-                    print("Received data store request.")
-                    open_new_terminal()
-                    if check_user_confirmation():
+                if 'store_data_request' in data:
+                    if is_whitelisted(addr_key):
                         conn.sendall(b'1')
-                        user_approved[addr_key] = True  # Set approval for this user
-                        print("User confirmed, sent '1' to the server.")
+                        user_approved[addr_key] = True
+                        print("Address is already whitelisted. Auto-approved.")
                     else:
-                        conn.sendall(b'0')
-                        print("User did not confirm.")
-                        user_approved[addr_key] = False  # Set disapproval for this user
-
+                        print("Received store data request.")
+                        open_new_terminal()
+                        if check_user_confirmation():
+                            conn.sendall(b'1')
+                            user_approved[addr_key] = True
+                            save_to_whitelist(addr_key)
+                            save_to_whitelist(addr)
+                            print("User confirmed, sent '1' to the server and whitelisted.")
+                        else:
+                            conn.sendall(b'0')
+                            user_approved[addr_key] = False
+                            print("User did not confirm.")
                 elif 'sensitive_information:' in data and user_approved.get(addr_key, True):
                     field_name, sensitive_data = data.split(':', 1)
                     print(f"Received {field_name}: {sensitive_data}")
                     save_to_file(field_name, sensitive_data)
 
                 elif data == 'retrieve_sensitive_data' and user_approved.get(addr_key, True):
-                    print("Received request to retrieve sensitive data.")
-                    if user_approved.get(addr_key, False):  # Check if user approved
-                        open_new_terminal()
-                        if check_user_confirmation():
-                            send_sensitive_data(conn)
-                        else:
-                            conn.sendall(b'User denied access.')
+                    print("Received request to retrieve sensitive data.") 
+                    # Check if user approved
+                    open_new_terminal()
+                    if check_user_confirmation():
+                        send_sensitive_data(conn)
                     else:
-                        print("Access denied: User has not confirmed data storage.")
-                        conn.sendall(b'Access denied: User has not confirmed data storage.')
+                        conn.sendall(b'User denied access.')
+                else:
+                    print("Failed to parse data correctly.")
+
+            except Exception as e:
+                print(f"Error during connection handling: {e}")
+                conn.close()
+
 
 def save_to_file(field_name, data):
     """Saves the received data and field name to a text file in the specified directory."""
