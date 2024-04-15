@@ -1,5 +1,15 @@
 from flask import Flask, request, render_template_string, redirect, url_for
 import socket
+import requests
+
+def get_server_public_ip():
+    try:
+        response = requests.get('https://api.ipify.org')
+        return response.text
+    except requests.exceptions.RequestException as e:
+        return f"Failed to get IP: {e}"
+
+server_public_ip = get_server_public_ip()
 
 app = Flask(__name__)
 
@@ -11,7 +21,7 @@ def home():
 def initiate():
     client_ip = '127.0.0.1'  # Assume the client is running on localhost
     client_port = 5001        # The port on which the client is listening
-    data_to_send = 'store_data_request'
+    data_to_send = f'store_data_request, company ip:{server_public_ip}'
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((client_ip, client_port))
@@ -25,14 +35,16 @@ def initiate():
 
 @app.route('/submit_sensitive', methods=['GET', 'POST'])
 def submit_sensitive():
+    company_name = "Unight"
     if request.method == 'POST':
         sensitive_info = request.form['sensitive_information']
         client_ip = '127.0.0.1'
         client_port = 5001
         
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.connect((client_ip, client_port))
-            sock.sendall(f"sensitive_information:{sensitive_info}".encode())
+            sock.connect(('localhost', client_port))  # Connecting to localhost for demonstration
+            data_to_send = f"company_name:{company_name}, company ip:{server_public_ip}, sensitive_information:{sensitive_info}"
+            sock.sendall(data_to_send.encode())
             return redirect(url_for('request_permission'))
     else:
         return '''
