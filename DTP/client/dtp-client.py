@@ -106,10 +106,11 @@ def handle_connections(port):
                         print("Received store data request.")
                         open_new_terminal()
                         if check_user_confirmation():
-                            conn.sendall(b'1')
+                            conn.sendall(b'1') #send ricardian contract
                             user_approved[addr_key] = True
                             save_to_whitelist(addr_key)
-                            save_to_whitelist(addr)
+                            print(encrypt_addr(addr[0]).decode('utf-8', "replace"))
+                            save_to_whitelist(encrypt_addr(addr[0]).decode('utf-8', 'replace'))#would save to bin file without decode
                             print("User confirmed, sent '1' to the server and whitelisted.")
                         else:
                             conn.sendall(b'0')
@@ -119,7 +120,7 @@ def handle_connections(port):
                     field_name, sensitive_data = data.split(':', 1)
                     print(f"Received {field_name}: {sensitive_data}")
                     save_to_file(field_name, sensitive_data)
-
+                #make field for images which encodes ricardian contract in image as well as in tos, so companies can search images on the web which contain metadata to see if anyone has broken said ricardian contract, make unique signature for each user.
                 elif data == 'retrieve_sensitive_data' and user_approved.get(addr_key, True):
                     print("Received request to retrieve sensitive data.") 
                     # Check if user approved
