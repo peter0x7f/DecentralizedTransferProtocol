@@ -1,3 +1,4 @@
+-create lock file and virtual env
 -update version with clientside database(textfile is for demonstration purposes)
 -Enforce security check where client must also be connected to the webserver through HTTPS to accept the initiate data store request
 -File for port number on iana
