@@ -1,0 +1,9 @@
+-update version with clientside database(textfile is for demonstration purposes)
+-Enforce security check where client must also be connected to the webserver through HTTPS to accept the initiate data store request
+-File for port number on iana
+-Create a website which verifies code base per request from client and server using temp auth tokens
+-Develop ricardian contract clauses and logic for client and server to set as a mutual data agreement
+-Develop interface for priveledged shared access of data among a client devices
+-Develop unique user key and usage agreement to be stored in the pixels of media.
+-Develop data store mobile app
+-Develop mobile and web framework packages
