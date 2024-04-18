@@ -3,6 +3,8 @@
 -update version with clientside database(textfile is for demonstration purposes)
 -implement relational database field to prevent client from storing duplicate information
 -Enforce security check where client must also be connected to the webserver through HTTPS to accept the initiate data store request
+-replace ip whitelist with auth token whitelist
+-implement server side whitelist on demo
 -File for port number on iana
 -Create a website which verifies code base integrity per request from client and server using temp auth tokens
 -Develop ricardian contract clauses and logic for client and server to set as a mutual data agreement
