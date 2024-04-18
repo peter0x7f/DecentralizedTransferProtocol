@@ -1,10 +1,13 @@
 -create lock file and virtual env
+-alter data stored from BSON to JSON due to most API's handling JSON data
 -update version with clientside database(textfile is for demonstration purposes)
+-implement relational database field to prevent client from storing duplicate information
 -Enforce security check where client must also be connected to the webserver through HTTPS to accept the initiate data store request
 -File for port number on iana
--Create a website which verifies code base per request from client and server using temp auth tokens
+-Create a website which verifies code base integrity per request from client and server using temp auth tokens
 -Develop ricardian contract clauses and logic for client and server to set as a mutual data agreement
--Develop interface for priveledged shared access of data among a client devices
+-Develop interface for priveledged shared access of data among a client devices, Willow Protocol seems to cover this ability well
 -Develop unique user key and usage agreement to be stored in the pixels of media.
+-Use yurt-page and openwrt projects to locally host public facing media and have the server serve the media on their app.
 -Develop data store mobile app
 -Develop mobile and web framework packages
