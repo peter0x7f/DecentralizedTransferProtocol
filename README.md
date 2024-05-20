@@ -3,4 +3,5 @@ A protocol which assists apps decentralize user data storage making running a we
 
 Open the folder DTP; Run the flask server and the client program to observe the demo
 
-![alt text](https://drive.google.com/file/d/1HP5qdwsyqfKRwn6tmDIC7lv9yQIIOONU/view?usp=sharing)
+
+![Screenshot_2024-04-16_125058](https://github.com/peter0x7f/DecentralizedTransferProtocol/assets/50468072/b1aae4a8-6d4e-43fe-8c04-9fffa3e55238)
