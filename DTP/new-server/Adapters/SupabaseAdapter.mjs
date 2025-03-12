@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
-dotenv.config();
+
+dotenv.config({path:'../.env'});
 
 
 import { createClient } from "@supabase/supabase-js";
@@ -7,7 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 import { v4 as uuidv4 } from "uuid";
 class SupabaseAdapter {
   constructor() {
-    this.supabase = createClient('https://hxsdvqydfjswvlvsmanu.supabase.co', '');
+    this.supabase = createClient('https://hxsdvqydfjswvlvsmanu.supabase.co', process.env.SUPABASE_SERVICE_ROLE_KEY);
   }
 
   async initTable() {
