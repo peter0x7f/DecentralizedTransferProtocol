@@ -10,9 +10,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "typescript": "^5.7.3"
+    "@supabase/supabase-js": "^2.49.1",
+    "dotenv": "^16.4.7",
+    "pg": "^8.14.0",
+    "typescript": "^5.7.3",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.5"
-  }
+  },
+  "type": "module"
 }
