@@ -1,0 +1,44 @@
+[
+    {
+        "id": "a48018ab-426c-4ec4-b865-cd976147f56e",
+        "ip": "192.168.1.100",
+        "dns": "companya.example.com",
+        "extra_data": "{\"note\": \"Initial record\"}"
+    },
+    {
+        "id": "6034d1a4-7ba6-44c9-b242-ef9064d3d07b",
+        "ip": "192.168.1.100",
+        "dns": "companya.example.com",
+        "extra_data": "{\"note\": \"Initial record\"}"
+    },
+    {
+        "id": "0fb26e75-2ea1-4e19-a4b5-3a93be79d36a",
+        "ip": "192.168.1.100",
+        "dns": "companya.example.com",
+        "extra_data": "{\"note\": \"Initial record\"}"
+    },
+    {
+        "id": "b2a7a4d8-6f5c-4de9-91dd-cbf90f6753fc",
+        "ip": "192.168.1.100",
+        "dns": "companya.example.com",
+        "extra_data": "{\"note\": \"Initial record\"}"
+    },
+    {
+        "id": "974f1313-268e-4dec-bd2d-5c67f4b39f68",
+        "ip": "192.168.1.100",
+        "dns": "companya.example.com",
+        "extra_data": "{\"note\": \"Initial record\"}"
+    },
+    {
+        "id": "18fb26f5-ab90-4623-aa98-519e8b8b639a",
+        "ip": "192.168.1.100",
+        "dns": "companya.example.com",
+        "extra_data": "{\"note\": \"Initial record\"}"
+    },
+    {
+        "id": "5a7cc413-7a43-4a6e-b435-4694ba630449",
+        "ip": "192.168.1.100",
+        "dns": "companya.example.com",
+        "extra_data": "{\"note\": \"Initial record\"}"
+    }
+]
