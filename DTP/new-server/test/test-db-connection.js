@@ -1,18 +1,32 @@
-
-import Init_DTP_Server from '../server_init.js';
+import Init_DTP_Server from "../server_init.js";
+import add_client from "../methods/add_client.mjs";
+import update_client from "../methods/update_client.mjs";
 
 const server = Init_DTP_Server();
 
-console.log('big steppers...')
+console.log("big steppers...");
 
-const add_client = async (user_ip) => {
-    try {
-      const result = await server.dbAdapter.addClient(user_ip);
-      console.log("Client added:", result);
-    } catch (error) {
-      console.error("Error adding client:", error);
+// Example usage of add_client function
+const main = async () => {
+  try {
+    const client = await add_client("192.168.1.10");
+
+    if (!client ) {
+      console.error("Failed to retrieve client UUID");
+      return;
     }
-  };
-  
-  // Example usage of add_client function   
-  add_client("192.168.1.10");
+
+   
+    await update_client(client, "38.0.101.76");
+
+    
+  } catch (error) {
+    console.error("Error in client update flow:", error);
+  }
+};
+
+main();
+
+
+ 
+ 
