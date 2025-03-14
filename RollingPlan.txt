@@ -16,4 +16,5 @@
 -implement client-side-storage into main script
 -change naming conventions of companies created to the domain name
 -create logic for altering data in database
+-fix AES handling
 
