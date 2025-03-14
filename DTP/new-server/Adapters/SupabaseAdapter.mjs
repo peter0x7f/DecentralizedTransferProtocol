@@ -9,7 +9,7 @@ class SupabaseAdapter {
   constructor() {
     this.supabase = createClient(
       "https://hxsdvqydfjswvlvsmanu.supabase.co",
-      process.env.SUPABASE_SERVICE_ROLE_KEY
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4c2R2cXlkZmpzd3ZsdnNtYW51Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MDYwNjc5OSwiZXhwIjoyMDU2MTgyNzk5fQ.HdjUrT9e3pSvuS2FAgOFHZ_dD8epBhAe5l2SB4Kv0II'
     );
   }
 
