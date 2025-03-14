@@ -7,8 +7,13 @@ class TCPServer {
     this.host = host;
     this.dbAdapter = dbAdapter;
     this.server = createServer(this.handleConnection.bind(this));
+    this.handlers = {};
   }
 
+  registerHandler(command, handler) {
+    this.handlers[command] = handler; 
+  }
+  
   async handleConnection(socket) {
     console.log(`Client connected: ${socket.remoteAddress}:${socket.remotePort}`);
 
@@ -16,12 +21,11 @@ class TCPServer {
       const message = data.toString().trim();
       console.log(`Received: ${message}`);
 
-      try {
-        await this.dbAdapter.insert(message);
-        socket.write(`Saved to database: ${message}`);
-      } catch (err) {
-        socket.write("Database error");
-        console.error("Database insert error:", err);
+      const [command, ...args] = message.split(" "); // Extract command
+      if (this.handlers[command]) {
+        this.handlers[command](socket, args, this.dbAdapter); // Call handler function
+      } else {
+        socket.write("ERROR: Unrecognized command\n");
       }
     });
 
