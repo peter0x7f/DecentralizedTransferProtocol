@@ -38,7 +38,7 @@ class TCPServer {
     const { client_uuid, client_ip, client_port, server_uuid, server_ip } = args;
   
     const message = {
-      type: "STORE_REQUEST",
+      meth: "STORE_REQUEST",
       meta: { timestamp: new Date().toISOString() },
       payload: {
         client_uuid,
@@ -57,7 +57,7 @@ class TCPServer {
     const { key, value } = data;
   
     const message = {
-      type: "STORE_DATA",
+      meth: "STORE_DATA",
       meta: { timestamp: new Date().toISOString() },
       payload: {
         client_uuid,
