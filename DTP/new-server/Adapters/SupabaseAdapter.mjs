@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 
-dotenv.config({ path: "../.env" });
+dotenv.config({ path: ".env" });
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -11,6 +11,7 @@ class SupabaseAdapter {
       "https://hxsdvqydfjswvlvsmanu.supabase.co",
       process.env.SUPABASE_ROLE_SERVICE_KEY
     );
+    
   }
 
   async initTable() {
@@ -90,6 +91,17 @@ class SupabaseAdapter {
       console.error("Supabase insert error:", error);
     } else {
       console.log("Data inserted into Supabase:", data);
+    }
+  }
+
+  async insertWhitelistedKey(client_uuid, key) {
+    const { error } = await this.supabase
+      .from("Whitelisted_Clients")
+      .insert([{ user_key: client_uuid, user_ip: key }]);
+    if (error) {
+      console.error("Supabase insert error:", error);
+    } else {
+      console.log("Whitelisted key inserted into Supabase:", key);
     }
   }
 

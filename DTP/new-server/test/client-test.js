@@ -30,6 +30,6 @@ const addClient = (user_ip) => {
 };
 
 // Add a client with IP `192.168.1.50`
-addClient("192.168.1.50")
+addClient("192.168.1.60")
   .then((response) => console.log("Client added:", response))
   .catch((err) => console.error("Error:", err));

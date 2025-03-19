@@ -1,5 +1,8 @@
 // Reusable Server (Singleton Pattern) Object
 // Joseph Somogie 2025
+import dotenv from "dotenv";
+
+dotenv.config({ path: "/.env" });
 
 import TCPServer from "./server.js";
 import SupabaseAdapter from "./Adapters/SupabaseAdapter.mjs";
