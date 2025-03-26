@@ -9,6 +9,8 @@ import SupabaseAdapter from "./Adapters/SupabaseAdapter.mjs";
 
 import addClientHandler from "./handlers/addClientHandler.js";
 import updateClientHandler from "./handlers/updateClientHandler.js";
+import handleStoreApprove from "./handlers/handleStoreApprove.js";
+import handleValueResponse from "./handlers/handleValueResponse.js";
 
 let serverInstance = null;
 
@@ -20,9 +22,10 @@ const Init_DTP_Server = () => {
     // Register command handlers
     serverInstance.registerHandler("ADD_CLIENT", addClientHandler);
     serverInstance.registerHandler("UPDATE_CLIENT", updateClientHandler);
+    serverInstance.registerHandler("STORE_APPROVE", handleStoreApprove);
+    serverInstance.registerHandler("VALUE_RESPONSE", handleValueResponse);
+
     //add more handlers for other server functions
-
-
 
     serverInstance.start();
   }
