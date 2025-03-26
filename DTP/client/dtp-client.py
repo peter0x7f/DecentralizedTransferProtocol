@@ -8,6 +8,9 @@ import sys
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import secrets 
+import json
+from datetime import datetime
+
 
 def get_or_create_secret(file_path, length):
     """Get the secret from file or create it if it does not exist."""
@@ -51,35 +54,56 @@ def encrypt_addr(data):
 def encrypt_data(data):
     # Dummy encryption for demonstration
     return data  # Replace with actual encryption in production
-
 def save_to_whitelist(addr_key):
-    addr_key_str = str(f"{addr_key[0]}")
-    print(f"Saving to whitelist: {addr_key_str}")  # Debug print
-    with open('data/whitelisted_ips.txt', 'a') as f:
-        f.write(addr_key_str + '\n')
+    """Save the whitelisted IP as a JSON entry."""
+    # Get a string representation (if addr_key is a tuple, use its first element)
+    addr_key_str = str(addr_key[0]) if isinstance(addr_key, tuple) else str(addr_key)
+    print(f"Saving to whitelist: {addr_key_str}")
+    
+    whitelist_file = 'data/whitelisted_ips.json'
+    whitelist = {"whitelisted_ips": []}
+    
+    # Load existing whitelist if available
+    if os.path.exists(whitelist_file):
+        try:
+            with open(whitelist_file, 'r') as f:
+                whitelist = json.load(f)
+        except json.JSONDecodeError:
+            print("JSON decode error, starting a new whitelist.")
+    
+    # Append the new whitelist entry with a timestamp
+    entry = {"ip": addr_key_str, "approved_on": datetime.utcnow().isoformat()}
+    whitelist["whitelisted_ips"].append(entry)
+    
+    # Save back to file
+    with open(whitelist_file, 'w') as f:
+        json.dump(whitelist, f, indent=4)
+        
 
 def is_whitelisted(addr_key):
-    """Check if the given address key is in the whitelist by reading a text file."""
-    addr_key_str = str(f"{addr_key[0]}") # Convert addr_key to string if it's not already
-    print(f"Checking if whitelisted: {addr_key_str}")  # Debug print as string
+    """Check if the given address key is whitelisted in the JSON file."""
+    addr_key_str = str(addr_key[0]) if isinstance(addr_key, tuple) else str(addr_key)
+    print(f"Checking if whitelisted: {addr_key_str}")
+    
+    whitelist_file = 'data/whitelisted_ips.json'
     try:
-        with open('data/whitelisted_ips.txt', 'r') as f:  # Open file in read mode, text mode
-            for line in f:
-                print(line.strip())
-                if addr_key_str == line.strip():  # Compare against stripped line
-                    print("Found whitelisted IP")
-                    return True
+        with open(whitelist_file, 'r') as f:
+            whitelist = json.load(f)
+        for entry in whitelist.get("whitelisted_ips", []):
+            print(f"Found entry: {entry['ip']}")
+            if entry["ip"] == addr_key_str:
+                print("Found whitelisted IP")
+                return True
         print("IP not found in whitelist")
         return False
     except FileNotFoundError:
         print("Whitelist file not found.")
         return False
 
-    
 
 def handle_connections(port):
-    """Handles incoming connections and processes data."""
-    user_approved = {}  # Dictionary to keep track of user approvals
+    """Handles incoming connections and processes JSON messages."""
+    user_approved = {}  # Tracks user approval status by address key
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -89,75 +113,153 @@ def handle_connections(port):
 
         while True:
             conn, addr = s.accept()
-            # Convert addr tuple to a string that represents the client address
-            addr_key = encrypt_data(addr)  # Now passing a string
+            # Process addr into a key (using your encryption/dummy method)
+            addr_key = encrypt_data(addr)
             print(f"Connected by {addr}, Processed address key: {addr_key}")
 
             try:
-                data = conn.recv(1024).decode()
+                data = conn.recv(4096).decode('utf-8')
                 print(f"Data received: {data}")
+                message = json.loads(data)
+                message_type = message.get("type")
+                payload = message.get("payload", {})
 
-                if 'store_data_request' in data:
+                if message_type == "STORE_REQUEST":
                     if is_whitelisted(addr_key):
-                        conn.sendall(b'1')
+                        response = {
+                            "type": "SUCCESS_RESPONSE",
+                            "meta": {"timestamp": datetime.utcnow().isoformat()},
+                            "payload": {"approval": True, "message": "Already whitelisted."}
+                        }
+                        conn.sendall(json.dumps(response).encode('utf-8'))
                         user_approved[addr_key] = True
                         print("Address is already whitelisted. Auto-approved.")
                     else:
-                        print("Received store data request.")
+                        print("Received STORE_REQUEST.")
                         open_new_terminal()
                         if check_user_confirmation():
-                            conn.sendall(b'1') #send ricardian contract
+                            response = {
+                                "type": "STORE_APPROVE",
+                                "meta": {"timestamp": datetime.utcnow().isoformat()},
+                                "payload": {"approval": True}
+                            }
+                            conn.sendall(json.dumps(response).encode('utf-8'))
                             user_approved[addr_key] = True
                             save_to_whitelist(addr_key)
-                            print(encrypt_addr(addr[0]).decode('utf-8', "replace"))
-                            save_to_whitelist(encrypt_addr(addr[0]).decode('utf-8', 'replace'))#would save to bin file without decode
-                            print("User confirmed, sent '1' to the server and whitelisted.")
+                            print("User confirmed, sent approval and whitelisted.")
                         else:
-                            conn.sendall(b'0')
+                            response = {
+                                "type": "FAIL_RESPONSE",
+                                "meta": {"timestamp": datetime.utcnow().isoformat()},
+                                "payload": {"approval": False, "message": "User did not confirm."}
+                            }
+                            conn.sendall(json.dumps(response).encode('utf-8'))
                             user_approved[addr_key] = False
                             print("User did not confirm.")
-                elif 'sensitive_information:' in data and user_approved.get(addr_key, True):
-                    field_name, sensitive_data = data.split(':', 1)
-                    print(f"Received {field_name}: {sensitive_data}")
-                    save_to_file(field_name, sensitive_data)
-                #make field for images which encodes ricardian contract in image as well as in tos, so companies can search images on the web which contain metadata to see if anyone has broken said ricardian contract, make unique signature for each user.
-                elif data == 'retrieve_sensitive_data' and user_approved.get(addr_key, True):
-                    print("Received request to retrieve sensitive data.") 
-                    # Check if user approved
+                elif message_type == "WRITE_VALUE" and user_approved.get(addr_key, False):
+                    # Expecting payload with data as a two-element list: [data_key, data_value]
+                    data_field = payload.get("data")
+                    if data_field and isinstance(data_field, list) and len(data_field) == 2:
+                        field_name, sensitive_data = data_field
+                        print(f"Received WRITE_VALUE for {field_name}: {sensitive_data}")
+                        save_to_file(field_name, sensitive_data)
+                        response = {
+                            "type": "SUCCESS_RESPONSE",
+                            "meta": {"timestamp": datetime.utcnow().isoformat()},
+                            "payload": {"message": "Data written successfully."}
+                        }
+                        conn.sendall(json.dumps(response).encode('utf-8'))
+                    else:
+                        response = {
+                            "type": "FAIL_RESPONSE",
+                            "meta": {"timestamp": datetime.utcnow().isoformat()},
+                            "payload": {"message": "Invalid data format for WRITE_VALUE."}
+                        }
+                        conn.sendall(json.dumps(response).encode('utf-8'))
+                elif message_type == "REQUEST_VALUE" and user_approved.get(addr_key, False):
+                    print("Received REQUEST_VALUE.")
                     open_new_terminal()
                     if check_user_confirmation():
                         send_sensitive_data(conn)
                     else:
-                        conn.sendall(b'User denied access.')
+                        response = {
+                            "type": "FAIL_RESPONSE",
+                            "meta": {"timestamp": datetime.utcnow().isoformat()},
+                            "payload": {"message": "User denied access."}
+                        }
+                        conn.sendall(json.dumps(response).encode('utf-8'))
                 else:
-                    print("Failed to parse data correctly.")
-
+                    print("Failed to parse message correctly or unknown message type.")
             except Exception as e:
                 print(f"Error during connection handling: {e}")
                 conn.close()
 
 
 def save_to_file(field_name, data):
-    """Saves the received data and field name to a text file in the specified directory."""
-    # Get the directory of the currently executing script
+    """Save the received data in a structured JSON file."""
     base_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    # Correctly form the path to the data directory relative to the base_dir
-    target_dir = os.path.join(base_dir, 'data')  # Ensuring 'data' directory is within the script's directory
-    os.makedirs(target_dir, exist_ok=True)  # Ensure the directory exists
-
-    # Form the full path to the file within the target directory
-    file_path = os.path.join(target_dir, "received_data.txt")
-
-    # Debugging output to check the path
+    target_dir = os.path.join(base_dir, 'data')
+    os.makedirs(target_dir, exist_ok=True)
+    
+    file_path = os.path.join(target_dir, "received_data.json")
     print(f"Attempting to save to: {file_path}")
+    
+    # Load existing data, if any
+    stored_data = {"data": []}
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r") as f:
+                stored_data = json.load(f)
+        except json.JSONDecodeError:
+            print("Error loading existing data; starting new file.")
+    
+    # Add new entry with a timestamp
+    entry = {
+        "field": field_name,
+        "value": data,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    stored_data["data"].append(entry)
+    
+    with open(file_path, "w") as f:
+        json.dump(stored_data, f, indent=4)
+    print(f"Data successfully saved to file: {file_path}")
 
-    try:
-        # Write data to the file
-        with open(file_path, "a") as file:
-            file.write(f"{field_name}: {data}\n")
-        print(f"Data successfully saved to file: {file_path}")
-    except Exception as e:
-        print("Failed to write to file due to error")
+
+def send_sensitive_data(conn):
+    """Reads sensitive data from a JSON file and sends it as a JSON message to the client."""
+    base_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    data_file = os.path.join(base_dir, 'data', 'received_data.json')
+    print(f"Reading data from: {data_file}")
+    
+    if os.path.exists(data_file):
+        try:
+            with open(data_file, 'r') as file:
+                data = json.load(file)
+            response = {
+                "type": "VALUE_RESPONSE",
+                "meta": {"timestamp": datetime.utcnow().isoformat()},
+                "payload": data  # Can include the full stored data structure
+            }
+            conn.sendall(json.dumps(response).encode('utf-8'))
+            print("Sensitive data sent successfully.")
+        except Exception as e:
+            print(f"Failed to read/send data: {e}")
+            response = {
+                "type": "FAIL_RESPONSE",
+                "meta": {"timestamp": datetime.utcnow().isoformat()},
+                "payload": {"message": "Error sending data"}
+            }
+            conn.sendall(json.dumps(response).encode('utf-8'))
+    else:
+        print("No data found to send.")
+        response = {
+            "type": "FAIL_RESPONSE",
+            "meta": {"timestamp": datetime.utcnow().isoformat()},
+            "payload": {"message": "No data available"}
+        }
+        conn.sendall(json.dumps(response).encode('utf-8'))
+
 
 def open_new_terminal():
     base_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -192,28 +294,6 @@ def check_user_confirmation():
 
     print("Timeout waiting for user confirmation.")
     return False
-
-def send_sensitive_data(conn):
-    """Reads sensitive data from a file and sends it to the server."""
-    base_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    data_file = os.path.join(base_dir, 'data', 'received_data.txt')
-    print(data_file)
-    try:
-        if os.path.exists(data_file):
-            with open(data_file, 'r') as file:
-                data = file.read()
-                if data:
-                    conn.sendall(data.encode())
-                    print("Sensitive data sent successfully.")
-                else:
-                    print("File is empty.")
-                    conn.sendall(b'No data available')
-        else:
-            print("No data found to send.")
-            conn.sendall(b'No data available')
-    except Exception as e:
-        print(f"Failed to read/send data: {e}")
-        conn.sendall(b'Error sending data')
 
 def start_listener(port):
     listener_thread = threading.Thread(target=handle_connections, args=(port,))
