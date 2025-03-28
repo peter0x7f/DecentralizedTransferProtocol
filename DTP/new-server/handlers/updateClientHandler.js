@@ -1,6 +1,6 @@
 
 
-const updateClientHandler = async (socket, args, dbAdapter) => {
+const updateClientHandler = async (server, socket, args, dbAdapter) => {
     if (args.length < 2) {
       socket.write("ERROR: Missing parameters (UUID & new IP)\n");
       return;

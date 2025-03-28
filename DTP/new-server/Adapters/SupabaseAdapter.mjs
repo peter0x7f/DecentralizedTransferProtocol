@@ -24,27 +24,8 @@ class SupabaseAdapter {
     }
   }
 
-  async addClient(user_ip) {
-    const client_uuid = uuidv4();
-    const { data, error } = await this.supabase
-      .from("Whitelisted_Clients")
-      .insert([{ user_key: client_uuid, user_ip }]);
-
-    if (error) {
-      console.error("Error adding client to Whitelisted_Clients:", error);
-      return null;
-    }
-
-    console.log(
-      "Client added: ",
-      client_uuid,
-      " with IP:",
-      user_ip,
-      " - data returned: ",
-      data
-    );
-    return client_uuid;
-  }
+  //add client is now handled from handleStoreApprove
+  
 
   async updateClient(client_uuid, new_user_ip) {
     try {
@@ -104,6 +85,36 @@ class SupabaseAdapter {
       console.log("Whitelisted key inserted into Supabase:", key);
     }
   }
+  async insertDataKey(client_uuid, key) {
+    // First, get current keys
+    const { data, error: fetchError } = await this.supabase
+      .from("Whitelisted_Clients")
+      .select("data_keys")
+      .eq("user_key", client_uuid)
+      .single();
+  
+    if (fetchError) {
+      console.error("Fetch error:", fetchError);
+      return;
+    }
+  
+    const existingKeys = data.data_keys || [];
+    const updatedKeys = [...new Set([...existingKeys, key])]; // avoid duplicates
+  
+    // Then update the array
+    const { error: updateError } = await this.supabase
+      .from("Whitelisted_Clients")
+      .update({ data_keys: updatedKeys })
+      .eq("user_key", client_uuid);
+  
+    if (updateError) {
+      console.error("Supabase update error:", updateError);
+      
+    } else {
+      console.log(`🔑 Added key "${key}" to user ${client_uuid}`);
+    }
+  }
+  
 
   async close() {
     console.log("Supabase does not require manual connection closing.");

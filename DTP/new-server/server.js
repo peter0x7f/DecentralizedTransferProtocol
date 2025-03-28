@@ -3,6 +3,9 @@ import { v4 as uuidv4 } from "uuid";
 
 class TCPServer {
   constructor(dbAdapter, port = 5001, host = "0.0.0.0") {
+    this.onClientConnect = null;
+    this.clients = new Map();
+    this.socketMap = new Map();
     this.port = port;
     this.host = host;
     this.dbAdapter = dbAdapter;
@@ -15,13 +18,18 @@ class TCPServer {
     this.handlers[command] = handler;
   }
 
+
+  // === On client connection callback ===
+  // This will be called whenever a new client connects
   async handleConnection(socket) {
+ 
     console.log(
       `Client connected: ${socket.remoteAddress}:${socket.remotePort}`
     );
 
+
     // Prepare client + server info
-    const client_uuid = uuidv4(); // assign on connect
+
     const client_ip = socket.remoteAddress;
     const client_port = socket.remotePort;
 
@@ -29,14 +37,22 @@ class TCPServer {
     const server_ip = this.host;
 
     // Call requestStore immediately on connect
+    // if client already approved, send STORE_APPROVED
+    // else prompt winform
+ 
     this.requestStore(socket, {
-      client_uuid,
       client_ip,
       client_port,
       server_uuid,
       server_ip,
     });
 
+    // listen for client response to requestStore 
+    // if STORE_APPROVED, the message should include the clientUUID
+    // if STORE_DENIED, the message should not include the clientUUID
+
+   
+    //parse client responses
     socket.on("data", async (chunk) => {
       const messages = chunk.toString().split("\n").filter(Boolean);
 
@@ -45,7 +61,7 @@ class TCPServer {
           const parsed = JSON.parse(msg);
           const handler = this.handlers[parsed.type];
           if (handler) {
-            await handler(socket, [msg], this.dbAdapter); // send raw JSON string in array
+            await handler(this, socket, [msg], this.dbAdapter); // send raw JSON string in array
           } else {
             socket.write("ERROR: Unrecognized type\n");
           }
@@ -55,20 +71,25 @@ class TCPServer {
         }
       }
     });
-
-    socket.on("close", () => console.log("Client disconnected"));
+    
+    // when connection closes
+    socket.on("close", () => {
+      const client_uuid = this.socketMap.get(socket);
+      this.clients.delete(client_uuid);
+      this.socketMap.delete(socket);
+      console.log(`Client ${client_uuid} disconnected`);
+    });
     socket.on("error", (err) => console.error("Socket error:", err.message));
   }
 
   async requestStore(socket, args) {
-    const { client_uuid, client_ip, client_port, server_uuid, server_ip } =
+    const {  client_ip, client_port, server_uuid, server_ip } =
       args;
 
     const message = {
       type: "STORE_REQUEST",
       meta: { timestamp: new Date().toISOString() },
       payload: {
-        client_uuid,
         client_ip,
         client_port,
         server_uuid,

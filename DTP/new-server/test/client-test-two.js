@@ -33,6 +33,12 @@ socket.on("data", (chunk) => {
           return handleWriteValue(payload);
         case "REQUEST_VALUE":
           return handleRequestValue(payload);
+          case "SUCCESS_RESPONSE":
+            console.log('✅ Received: SUCCESS_RESPONSE' + "\n" + payload.message);
+            break;
+          case "FAIL_RESPONSE":
+            console.log('❌ Received: FAIL_RESPONSE' + "\n" + payload.message);
+            break;
         default:
           console.log("Unknown command type.");
       }
@@ -53,12 +59,13 @@ socket.on("error", (err) => {
 // === Handlers ===
 
 function handleStoreRequest(payload) {
+  const client_uuid = uuidv4();
   const response = {
     type: "STORE_APPROVE",
     meta: { timestamp: new Date().toISOString() },
     payload: {
       ...payload,
-      data_key:'test_key',
+      client_uuid,
       message: "Store approved",
     },
   };

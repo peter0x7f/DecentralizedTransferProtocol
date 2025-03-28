@@ -1,4 +1,4 @@
-async function handleValueResponse(socket, args, dbAdapter) {
+async function handleValueResponse(server, socket, args, dbAdapter) {
     try {
       const json = JSON.parse(args.join(" "));
       const { client_uuid, data_value } = json.payload;

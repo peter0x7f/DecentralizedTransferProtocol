@@ -7,7 +7,7 @@ dotenv.config({ path: "/.env" });
 import TCPServer from "./server.js";
 import SupabaseAdapter from "./Adapters/SupabaseAdapter.mjs";
 
-import addClientHandler from "./handlers/addClientHandler.js";
+
 import updateClientHandler from "./handlers/updateClientHandler.js";
 import handleStoreApprove from "./handlers/handleStoreApprove.js";
 import handleValueResponse from "./handlers/handleValueResponse.js";
@@ -20,12 +20,11 @@ const Init_DTP_Server = () => {
     serverInstance = new TCPServer(dbAdapter, 5001, "0.0.0.0");
 
     // Register command handlers
-    serverInstance.registerHandler("ADD_CLIENT", addClientHandler);
     serverInstance.registerHandler("UPDATE_CLIENT", updateClientHandler);
     serverInstance.registerHandler("STORE_APPROVE", handleStoreApprove);
     serverInstance.registerHandler("VALUE_RESPONSE", handleValueResponse);
 
-    //add more handlers for other server functions
+    //add more handlers for other server handlers (server functions for specific command types)
 
     serverInstance.start();
   }
