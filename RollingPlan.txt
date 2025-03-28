@@ -13,3 +13,8 @@
 -Use yurt-page and openwrt projects to locally host public facing media and have the server serve the media on their app.
 -Develop data store mobile app
 -Develop mobile and web framework packages
+-implement client-side-storage into main script
+-change naming conventions of companies created to the domain name
+-create logic for altering data in database
+-fix AES handling
+
