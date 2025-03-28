@@ -14,19 +14,18 @@ class TCPServer {
     this.uuid = uuidv4();
   }
 
+  // === Register handler ===
+  // Allows dynamic registration of handlers for specific command types
   registerHandler(command, handler) {
     this.handlers[command] = handler;
   }
 
-
   // === On client connection callback ===
   // This will be called whenever a new client connects
   async handleConnection(socket) {
- 
     console.log(
       `Client connected: ${socket.remoteAddress}:${socket.remotePort}`
     );
-
 
     // Prepare client + server info
 
@@ -39,7 +38,7 @@ class TCPServer {
     // Call requestStore immediately on connect
     // if client already approved, send STORE_APPROVED
     // else prompt winform
- 
+
     this.requestStore(socket, {
       client_ip,
       client_port,
@@ -47,11 +46,10 @@ class TCPServer {
       server_ip,
     });
 
-    // listen for client response to requestStore 
+    // listen for client response to requestStore
     // if STORE_APPROVED, the message should include the clientUUID
     // if STORE_DENIED, the message should not include the clientUUID
 
-   
     //parse client responses
     socket.on("data", async (chunk) => {
       const messages = chunk.toString().split("\n").filter(Boolean);
@@ -71,7 +69,7 @@ class TCPServer {
         }
       }
     });
-    
+
     // when connection closes
     socket.on("close", () => {
       const client_uuid = this.socketMap.get(socket);
@@ -82,9 +80,13 @@ class TCPServer {
     socket.on("error", (err) => console.error("Socket error:", err.message));
   }
 
+  // === Server Side Data Store Request / Verification ===
+  //SYN from server, sent on client connection.
+  //Client responds with STORE_APPROVED or STORE_DENIED
+  // if STORE_APPROVED, the message should include the clientUUID
+  // if STORE_DENIED, the message should not include the clientUUID
   async requestStore(socket, args) {
-    const {  client_ip, client_port, server_uuid, server_ip } =
-      args;
+    const { client_ip, client_port, server_uuid, server_ip } = args;
 
     const message = {
       type: "STORE_REQUEST",
@@ -100,54 +102,14 @@ class TCPServer {
     socket.write(JSON.stringify(message) + "\n"); // delimiter for TCP stream
   }
 
-  async storeData(socket, args, data) {
-    const { client_uuid, client_ip, client_port, server_uuid, server_ip } =
-      args;
-    const { key, value } = data;
+  // === Server side write value to client partition ===
+  // should only be called after requestStore is approved.
+  // NOTE: approved clients will be in 'clients' map && 'socketMap' map
 
-    const message = {
-      type: "STORE_DATA",
-      meta: { timestamp: new Date().toISOString() },
-      payload: {
-        client_uuid,
-        client_ip,
-        client_port,
-        server_uuid,
-        server_ip,
-        data: { key, value },
-      },
-    };
-
-    socket.write(JSON.stringify(message) + "\n");
-
-    // Listen for response from THIS socket
-    const handleResponse = (chunk) => {
-      try {
-        const responses = chunk.toString().trim().split("\n");
-        responses.forEach(async (res) => {
-          const parsed = JSON.parse(res);
-          if (
-            parsed.type === "STORE_APPROVED" &&
-            parsed.payload &&
-            parsed.payload.key === key
-          ) {
-            console.log(`Client approved STORE for key: ${key}`);
-
-            // Insert key into whitelisted_clients DB
-            await this.dbAdapter.insertWhitelistedKey(client_uuid, key);
-
-            // Optional: remove listener after successful response
-            socket.off("data", handleResponse);
-          }
-        });
-      } catch (err) {
-        console.error("Error parsing client response:", err);
-      }
-    };
-
-    socket.on("data", handleResponse);
-  }
-  async handleWriteValue(socket, args, dbAdapter) {
+  // TODO: add handler for success_write ? or add logic to function based on response from client. 
+  // (SUCCESS_RESPONSE -> add key to db : FAIL_RESPONSE -> don't add key to db)
+  // if key exists in db , update else create
+  async WriteValue(socket, args, dbAdapter) {
     try {
       const {
         client_uuid,
@@ -168,13 +130,16 @@ class TCPServer {
           client_port,
           server_uuid,
           server_ip,
-          data: [data_key, data_value],
+          data: {
+            key: data_key,
+            value: data_value,
+          },
         },
       };
 
       socket.write(JSON.stringify(message) + "\n");
 
-      // Optional: log the action
+      // Log to DB
       await dbAdapter.insert(
         `[${client_uuid}] WRITE_VALUE issued for key: ${data_key}`
       );
@@ -189,8 +154,9 @@ class TCPServer {
       );
     }
   }
-
-  async handleRequestValue(socket, args, dbAdapter) {
+// === Server side request value from client partition ===
+//
+  async RequestValue(socket, args, dbAdapter) {
     try {
       const {
         client_uuid,
@@ -219,6 +185,12 @@ class TCPServer {
       await dbAdapter.insert(
         `[${client_uuid}] REQUEST_VALUE issued for key: ${data_key}`
       );
+
+
+
+      //get response ? and process it.
+
+
     } catch (err) {
       console.error("REQUEST_VALUE error:", err);
       socket.write(
