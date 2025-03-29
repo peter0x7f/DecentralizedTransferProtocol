@@ -75,22 +75,28 @@ function handleStoreRequest(payload) {
 }
 
 function handleWriteValue(payload) {
-  const [data_key, data_value] = payload.data;
+  const {  key,  value } = payload.data;
 
-  console.log(`📝 Write request for key: ${data_key} with value: ${data_value}`);
+  if (!key || !value) {
+    console.error("Invalid WRITE_VALUE payload:", payload);
+    return;
+  }
+
+  console.log(`📝 Write request for key: ${key} with value: ${value}`);
 
   const response = {
     type: "SUCCESS_RESPONSE",
     meta: { timestamp: new Date().toISOString() },
     payload: {
       client_uuid,
-      message: `Stored key "${data_key}" successfully`,
+      message: `Stored key "${key}" successfully`,
     },
   };
 
   socket.write(JSON.stringify(response) + "\n");
   console.log("✅ Sent: SUCCESS_RESPONSE (WRITE_VALUE)");
 }
+
 
 function handleRequestValue(payload) {
   const data_value = "mocked_value_from_client"; // Just for test logging

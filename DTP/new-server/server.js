@@ -1,9 +1,10 @@
 import { createServer } from "net";
+import { EventEmitter } from "events";
 import { v4 as uuidv4 } from "uuid";
 
-class TCPServer {
+class TCPServer extends EventEmitter {
   constructor(dbAdapter, port = 5001, host = "0.0.0.0") {
-    this.onClientConnect = null;
+    super();
     this.clients = new Map();
     this.socketMap = new Map();
     this.port = port;
@@ -26,6 +27,8 @@ class TCPServer {
     console.log(
       `Client connected: ${socket.remoteAddress}:${socket.remotePort}`
     );
+    //emit client connect event
+    this.emit("client-connected", socket);
 
     // Prepare client + server info
 
@@ -106,7 +109,7 @@ class TCPServer {
   // should only be called after requestStore is approved.
   // NOTE: approved clients will be in 'clients' map && 'socketMap' map
 
-  // TODO: add handler for success_write ? or add logic to function based on response from client. 
+  // TODO: add handler for success_write ? or add logic to function based on response from client.
   // (SUCCESS_RESPONSE -> add key to db : FAIL_RESPONSE -> don't add key to db)
   // if key exists in db , update else create
   async WriteValue(socket, args, dbAdapter) {
@@ -154,8 +157,8 @@ class TCPServer {
       );
     }
   }
-// === Server side request value from client partition ===
-//
+  // === Server side request value from client partition ===
+  //
   async RequestValue(socket, args, dbAdapter) {
     try {
       const {
@@ -186,11 +189,7 @@ class TCPServer {
         `[${client_uuid}] REQUEST_VALUE issued for key: ${data_key}`
       );
 
-
-
       //get response ? and process it.
-
-
     } catch (err) {
       console.error("REQUEST_VALUE error:", err);
       socket.write(

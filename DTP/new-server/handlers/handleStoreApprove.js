@@ -1,7 +1,9 @@
 async function handleStoreApprove(server, socket, args, dbAdapter) {
   try {
+
     const json = JSON.parse(args.join(" "));
     const { client_uuid, client_ip } = json.payload;
+    server.emit("client-approved", socket, client_uuid, client_ip);
 
     if (!client_uuid) {
       throw new Error("Missing client_uuid in payload.");
