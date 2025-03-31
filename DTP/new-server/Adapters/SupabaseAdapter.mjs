@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 
-dotenv.config({path:'../.env'});
+dotenv.config({ path: "../.env" });
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -11,7 +11,6 @@ class SupabaseAdapter {
       "https://hxsdvqydfjswvlvsmanu.supabase.co",
       process.env.SUPABASE_ROLE_SERVICE_KEY
     );
-    
   }
 
   async initTable() {
@@ -25,7 +24,6 @@ class SupabaseAdapter {
   }
 
   //add client is now handled from handleStoreApprove
-  
 
   async updateClient(client_uuid, new_user_ip) {
     try {
@@ -64,17 +62,6 @@ class SupabaseAdapter {
     }
   }
 
-  async insert(data) {
-    const { error } = await this.supabase
-      .from("logs")
-      .insert([{ message: data }]);
-    if (error) {
-      console.error("Supabase insert error:", error);
-    } else {
-      console.log("Data inserted into Supabase:", data);
-    }
-  }
-
   async insertWhitelistedKey(client_uuid, key) {
     const { error } = await this.supabase
       .from("Whitelisted_Clients")
@@ -87,34 +74,28 @@ class SupabaseAdapter {
   }
   async insertDataKey(client_uuid, key) {
     // First, get current keys
-    const { data, error: fetchError } = await this.supabase
+    const { data } = await this.supabase
       .from("Whitelisted_Clients")
       .select("data_keys")
       .eq("user_key", client_uuid)
       .single();
-  
-    if (fetchError) {
-      console.error("Fetch error:", fetchError);
-      return;
-    }
-  
+
+
     const existingKeys = data.data_keys || [];
     const updatedKeys = [...new Set([...existingKeys, key])]; // avoid duplicates
-  
+
     // Then update the array
     const { error: updateError } = await this.supabase
       .from("Whitelisted_Clients")
       .update({ data_keys: updatedKeys })
       .eq("user_key", client_uuid);
-  
+
     if (updateError) {
       console.error("Supabase update error:", updateError);
-      
     } else {
       console.log(`🔑 Added key "${key}" to user ${client_uuid}`);
     }
   }
-  
 
   async close() {
     console.log("Supabase does not require manual connection closing.");

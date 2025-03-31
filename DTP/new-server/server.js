@@ -182,9 +182,7 @@ class TCPServer extends EventEmitter {
 
       socket.write(JSON.stringify(message) + "\n");
 
-      await dbAdapter.insert(
-        `[${client_uuid}] REQUEST_VALUE issued for key: ${data_key}`
-      );
+     
 
       //get response ? and process it.
     } catch (err) {
