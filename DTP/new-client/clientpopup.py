@@ -4,8 +4,8 @@ import sys
 clr.AddReference("System.Windows.Forms")
 clr.AddReference("System.Drawing")
 
-from System.Windows.Forms import Application, Form, Label, Button, DialogResult
-from System.Drawing import Point
+from System.Windows.Forms import Application, Form, Label, Button, DialogResult # type: ignore
+from System.Drawing import Point # type: ignore
 
 class ClientPopup(Form):
     def __init__(self, server_ip, server_port, server_name, server_uuid):

@@ -74,7 +74,22 @@ class DTPClient:
             message = json.loads(msg)
             msg_type = message.get("type")
             payload = message.get("payload", {})
+
             client_uuid = self.uuid
+            server_uuid = payload.get("server_uuid")
+            isWhitelisted = self.database.cursor.execute(
+                "SELECT * FROM WhitelistedServers WHERE server_uuid = ?",
+                (server_uuid,),
+            ).fetchone()
+            if isWhitelisted is None:
+                approved = prompt_user(
+                    payload.get("server_ip"),
+                    payload.get("server_port"),
+                    payload.get("server_name"),
+                    server_uuid,
+                )
+                if not approved:
+                    return
 
             if msg_type == "STORE_REQUEST":
                 server_uuid = payload.get("server_uuid")
