@@ -66,6 +66,8 @@ class SupabaseAdapter {
     const { error } = await this.supabase
       .from("Whitelisted_Clients")
       .insert([{ user_key: client_uuid, user_ip: key }]);
+
+      
     if (error) {
       console.error("Supabase insert error:", error);
     } else {

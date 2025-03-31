@@ -3,7 +3,7 @@ async function handleStoreApprove(server, socket, args, dbAdapter) {
 
     const json = JSON.parse(args.join(" "));
     const { client_uuid, client_ip } = json.payload;
-    server.emit("client-approved", socket, client_uuid, client_ip);
+    
 
     if (!client_uuid) {
       throw new Error("Missing client_uuid in payload.");
@@ -56,6 +56,7 @@ async function handleStoreApprove(server, socket, args, dbAdapter) {
     server.clients.set(client_uuid, socket);
     server.socketMap.set(socket, client_uuid);
     console.log(`Client ${client_uuid} added to active clients.`);
+    server.emit("client-approved", socket, client_uuid, client_ip);
 
     const response = {
       type: "SUCCESS_RESPONSE",
