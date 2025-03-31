@@ -77,6 +77,7 @@ class DTPClient:
 
             client_uuid = self.uuid
             server_uuid = payload.get("server_uuid")
+            """
             isWhitelisted = self.database.cursor.execute(
                 "SELECT * FROM WhitelistedServers WHERE server_uuid = ?",
                 (server_uuid,),
@@ -90,6 +91,7 @@ class DTPClient:
                 )
                 if not approved:
                     return
+        """
 
             if msg_type == "STORE_REQUEST":
                 server_uuid = payload.get("server_uuid")
