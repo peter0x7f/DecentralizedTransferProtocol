@@ -11,6 +11,7 @@ import SupabaseAdapter from "./Adapters/SupabaseAdapter.mjs";
 import updateClientHandler from "./handlers/updateClientHandler.js";
 import handleStoreApprove from "./handlers/handleStoreApprove.js";
 import handleValueResponse from "./handlers/handleValueResponse.js";
+import handleSuccessStore from "./handlers/handleSucessStore.js";
 
 let serverInstance = null;
 
@@ -23,6 +24,7 @@ const Init_DTP_Server = () => {
     serverInstance.registerHandler("UPDATE_CLIENT", updateClientHandler);
     serverInstance.registerHandler("STORE_APPROVE", handleStoreApprove);
     serverInstance.registerHandler("VALUE_RESPONSE", handleValueResponse);
+    serverInstance.registerHandler("SUCCESS_STORE", handleSuccessStore);
 
     //add more handlers for other server handlers (server functions for specific command types)
 

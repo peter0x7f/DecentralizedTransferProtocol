@@ -12,7 +12,7 @@ class TCPServer extends EventEmitter {
     this.dbAdapter = dbAdapter;
     this.server = createServer(this.handleConnection.bind(this));
     this.handlers = {};
-    this.uuid = uuidv4();
+    this.uuid = 'b63aef45-2e2e-4f8f-94c2-58c17162e80f'; // uuidv4(); || process.env.SERVER_UUID
   }
 
   // === Register handler ===
@@ -142,10 +142,7 @@ class TCPServer extends EventEmitter {
 
       socket.write(JSON.stringify(message) + "\n");
 
-      // Log to DB
-      await dbAdapter.insert(
-        `[${client_uuid}] WRITE_VALUE issued for key: ${data_key}`
-      );
+     
     } catch (err) {
       console.error("WRITE_VALUE error:", err);
       socket.write(

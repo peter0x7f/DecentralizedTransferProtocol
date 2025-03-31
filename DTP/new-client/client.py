@@ -72,55 +72,52 @@ class DTPClient:
             if msg_type == "STORE_REQUEST":
                 server_uuid = payload.get("server_uuid")
                 server_ip = payload.get("server_ip")
-              
+
                 type = payload.get("type")
                 self.database.insert_log(f"{type} from {server_ip}")
-                self.process_store_request(server_uuid, server_ip,  conn)
+                self.process_store_request(server_uuid, server_ip, conn)
 
             elif msg_type == "WRITE_VALUE":
-                
+
                 server_uuid = payload.get("server_uuid")
                 server_ip = payload.get("server_ip")
-  
-                key = payload.get("data", {}).get("data_key")
-                value = payload.get("data", {}).get("data_value")
+
+                key = payload.get("data", {}).get("key")
+                value = payload.get("data", {}).get("value")
                 type = payload.get("type")
                 print(f"WRITE_VALUE received from {server_ip}")
+                print(f"Key: {key}, Value: {value}")
                 self.database.insert_log(f"{type} from {server_ip}")
-                self.process_write_value(
-                    server_uuid, server_ip,  key, value, conn
-                )
+                self.process_write_value(server_uuid, server_ip, key, value, conn)
 
             elif msg_type == "REQUEST_VALUE":
 
                 server_uuid = payload.get("server_uuid")
                 server_ip = payload.get("server_ip")
-           
-                key = payload.get("data", {}).get("key")
+
+                key = payload.get("data_key")
                 type = payload.get("type")
                 self.database.insert_log(f"{type} from {server_ip}")
-                self.process_request_value(
-                    server_uuid, server_ip,  key, conn
-                )
+                self.process_request_value(server_uuid, server_ip, key, conn)
 
             elif msg_type == "SUCCESS_RESPONSE":
                 server_uuid = payload.get("server_uuid")
                 server_ip = payload.get("server_ip")
-         
+
                 type = payload.get("type")
                 self.database.insert_log(f"{type} from {server_ip}")
 
             elif msg_type == "FAIL_RESPONSE":
                 server_uuid = payload.get("server_uuid")
                 server_ip = payload.get("server_ip")
-      
+
                 type = payload.get("type")
                 self.database.insert_log(f"{type} from {server_ip}")
 
         except Exception as e:
             print(f"Error processing message: {e}")
 
-    def process_store_request(self, server_uuid, server_ip,  conn):
+    def process_store_request(self, server_uuid, server_ip, conn):
         try:
             # Add server to whitelist
             self.database.add_whitelisted_server(server_uuid, server_ip)
@@ -145,17 +142,16 @@ class DTPClient:
         except Exception as e:
             print(f"Error processing STORE_REQUEST: {e}")
 
-    def process_write_value(
-        self, server_uuid, server_ip,  key, value, conn
-    ):
+    def process_write_value(self, server_uuid, server_ip, key, value, conn):
         try:
             self.database.store_data(server_uuid, key, value)
             response = {
-                "type": "SUCCESS_RESPONSE",
+                "type": "SUCCESS_STORE",
                 "meta": {"timestamp": datetime.now().isoformat()},
                 "payload": {
                     "client_uuid": "86394b22-fd0e-4f59-9c1b-bf2e4e0b8a1d",
                     "message": "Data stored successfully",
+                    "key": key,
                 },
             }
             conn.sendall((json.dumps(response) + "\n").encode("utf-8"))
@@ -167,6 +163,7 @@ class DTPClient:
     def process_request_value(self, server_uuid, server_ip, key, conn):
         try:
             value = self.database.get_data(server_uuid, key)
+            print(f"process request value for key: {key}")
             response = {
                 "type": "VALUE_RESPONSE",
                 "meta": {"timestamp": datetime.now().isoformat()},
@@ -180,7 +177,7 @@ class DTPClient:
                 },
             }
             conn.sendall((json.dumps(response) + "\n").encode("utf-8"))
-            print(f"VALUE_RESPONSE sent to {server_ip}")
+            print(f"VALUE_RESPONSE with val {value} sent to {server_ip}")
 
         except Exception as e:
             print(f" Error processing REQUEST_VALUE: {e}")

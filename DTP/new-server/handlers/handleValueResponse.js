@@ -6,8 +6,8 @@ async function handleValueResponse(server, socket, args, dbAdapter) {
       if (!client_uuid || !data_value) {
         throw new Error("Missing client_uuid or data_value.");
       }
-  
-      await dbAdapter.insert(`[${client_uuid}] Value sent: ${data_value}`);
+      console.log("handleValueResponse: ", json.payload);
+   
   
       socket.write(
         JSON.stringify({
