@@ -5,6 +5,10 @@ import os
 import socket
 import sqlite3
 import time
+import sys
+from clientpopup import prompt_user
+
+ 
 
 
 class DTPClient:
@@ -12,7 +16,9 @@ class DTPClient:
         self.database = Database(database_path)
         self.database.connect()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.uuid = "86394b22-fd0e-4f59-9c1b-bf2e4e0b8a1d" # env variable for client uuid
+        self.uuid = (
+            "86394b22-fd0e-4f59-9c1b-bf2e4e0b8a1d"  # env variable for client uuid
+        )
 
     # fix
     def handle_connection(self, conn, addr):
@@ -74,10 +80,28 @@ class DTPClient:
             if msg_type == "STORE_REQUEST":
                 server_uuid = payload.get("server_uuid")
                 server_ip = payload.get("server_ip")
-
                 type = payload.get("type")
+
                 self.database.insert_log(f"{type} from {server_ip}")
-                self.process_store_request(server_uuid, server_ip, conn, client_uuid)
+                serverExists = self.database.cursor.execute(
+                    "SELECT * FROM WhitelistedServers WHERE server_uuid = ?",
+                    (server_uuid,),
+                ).fetchone()
+
+                if serverExists:
+                    self.process_store_request(
+                        server_uuid, server_ip, conn, client_uuid
+                    )
+                else:
+                    approved = prompt_user(
+                        server_ip, "5001", "test_server", server_uuid
+                    )
+                    if approved:
+                        self.process_store_request(
+                            server_uuid, server_ip, conn, client_uuid
+                        )
+                    else:
+                        print(f"STORE_REQUEST rejected from {server_ip}")
 
             elif msg_type == "WRITE_VALUE":
 
@@ -90,7 +114,9 @@ class DTPClient:
                 print(f"WRITE_VALUE received from {server_ip}")
                 print(f"Key: {key}, Value: {value}")
                 self.database.insert_log(f"{type} from {server_ip}")
-                self.process_write_value(server_uuid, server_ip, key, value, conn, client_uuid)
+                self.process_write_value(
+                    server_uuid, server_ip, key, value, conn, client_uuid
+                )
 
             elif msg_type == "REQUEST_VALUE":
 
@@ -100,7 +126,9 @@ class DTPClient:
                 key = payload.get("data_key")
                 type = payload.get("type")
                 self.database.insert_log(f"{type} from {server_ip}")
-                self.process_request_value(server_uuid, server_ip, key, conn, client_uuid)
+                self.process_request_value(
+                    server_uuid, server_ip, key, conn, client_uuid
+                )
 
             elif msg_type == "SUCCESS_RESPONSE":
                 server_uuid = payload.get("server_uuid")
@@ -123,7 +151,7 @@ class DTPClient:
         try:
             # Add server to whitelist
             self.database.add_whitelisted_server(server_uuid, server_ip)
-            
+
             response = {
                 "type": "STORE_APPROVE",
                 "meta": {"timestamp": datetime.now().isoformat()},
@@ -144,7 +172,9 @@ class DTPClient:
         except Exception as e:
             print(f"Error processing STORE_REQUEST: {e}")
 
-    def process_write_value(self, server_uuid, server_ip, key, value, conn, client_uuid):
+    def process_write_value(
+        self, server_uuid, server_ip, key, value, conn, client_uuid
+    ):
         try:
             self.database.store_data(server_uuid, key, value)
             response = {
@@ -183,9 +213,6 @@ class DTPClient:
 
         except Exception as e:
             print(f" Error processing REQUEST_VALUE: {e}")
-
-    
-
 
 
 class Database:
