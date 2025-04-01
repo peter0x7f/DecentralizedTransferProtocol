@@ -71,6 +71,12 @@ class Database:
         )
         self.conn.commit()
 
+    def print_logs(self, time):
+        self.cursor.execute("SELECT * FROM Logs WHERE timestamp > ?", (time,))
+        logs = self.cursor.fetchall()
+        for log in logs:
+            print(f"{log[0]}: {log[1]}")
+
     def init_client_info(self, client_uuid, client_ip, client_port):
         self.cursor.execute("SELECT client_uuid FROM clientInfo")
         row = self.cursor.fetchone()
