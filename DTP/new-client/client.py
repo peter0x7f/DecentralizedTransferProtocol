@@ -96,7 +96,6 @@ class DTPClient:
             if msg_type == "STORE_REQUEST":
                 server_uuid = payload.get("server_uuid")
                 server_ip = payload.get("server_ip")
-                
 
                 self.database.insert_log(f"{msg_type} from {server_ip}")
                 serverExists = self.database.cursor.execute(
@@ -120,13 +119,21 @@ class DTPClient:
                         print(f"STORE_REQUEST rejected from {server_ip}")
 
             elif msg_type == "WRITE_VALUE":
+                approved = prompt_user(
+                    payload.get("server_ip"),
+                    payload.get("server_port"),
+                    payload.get("server_name"),
+                    server_uuid,
+                )
+                if not approved:
+                    return
 
                 server_uuid = payload.get("server_uuid")
                 server_ip = payload.get("server_ip")
 
                 key = payload.get("data", {}).get("key")
                 value = payload.get("data", {}).get("value")
-              
+
                 print(f"WRITE_VALUE received from {server_ip}")
                 print(f"Key: {key}, Value: {value}")
                 self.database.insert_log(f"{msg_type} from {server_ip}")
@@ -136,11 +143,20 @@ class DTPClient:
 
             elif msg_type == "REQUEST_VALUE":
 
+                approved = prompt_user(
+                    payload.get("server_ip"),
+                    payload.get("server_port"),
+                    payload.get("server_name"),
+                    server_uuid,
+                )
+                if not approved:
+                    return
+
                 server_uuid = payload.get("server_uuid")
                 server_ip = payload.get("server_ip")
 
                 key = payload.get("data_key")
-                
+
                 self.database.insert_log(f"{msg_type} from {server_ip}")
                 self.process_request_value(
                     server_uuid, server_ip, key, conn, client_uuid
@@ -150,14 +166,12 @@ class DTPClient:
                 server_uuid = payload.get("server_uuid")
                 server_ip = payload.get("server_ip")
 
-                
                 self.database.insert_log(f"{msg_type} from {server_ip}")
 
             elif msg_type == "FAIL_RESPONSE":
                 server_uuid = payload.get("server_uuid")
                 server_ip = payload.get("server_ip")
 
-                
                 self.database.insert_log(f"{msg_type} from {server_ip}")
 
         except Exception as e:
